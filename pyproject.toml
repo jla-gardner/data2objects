@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data2objects"
-version = "0.0.0"
+version = "0.0.1"
 description = "Transform nested data structures into Python objects"
 readme = "README.md"
 authors = [{ name = "John Gardner", email = "gardner.john97@gmail.com" }]
@@ -26,7 +26,7 @@ publish = ["build", "twine"]
 Homepage = "https://github.com/jla-gardner/data2objects"
 
 [tool.bumpver]
-current_version = "0.0.0"
+current_version = "0.0.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump {old_version} -> {new_version}"
 commit = true
