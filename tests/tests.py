@@ -1,7 +1,7 @@
 import helpers
 import pytest
 
-from data2objects import index_into, from_dict
+from data2objects import from_dict, index_into
 
 
 def test_basics():
