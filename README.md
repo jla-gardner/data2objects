@@ -5,9 +5,11 @@ Transform nested data structures into Python objects.
 
 ## Installation
 
-```bash
+```
 pip install data2objects
 ```
+
+or just copy `data2objects.py` into your project.
 
 ## Usage
 
