@@ -12,7 +12,7 @@ from typing import Any, Callable, TypeVar
 
 import yaml
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __all__ = ["from_dict"]
 
 IMPORT_PREFIX = "+"
