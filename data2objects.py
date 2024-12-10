@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import collections.abc
+import copy
 import importlib
 import importlib.util
 import os
@@ -9,14 +10,13 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
+import yaml
+
 __version__ = "0.0.1"
 __all__ = ["from_dict"]
 
 IMPORT_PREFIX = "+"
-
-IS_REFERENCE_PREFIX = "!"
-DELIMITER = "/"
-ROOT_PREFIX = "~"
+REFERENCE_PREFIX = "="
 
 
 def _import(thing: str, modules: list[object] | None = None) -> Any:
@@ -116,6 +116,9 @@ def process_data_str(
     if not isinstance(data, str) or not data.startswith(IMPORT_PREFIX):
         return data
 
+    if data == IMPORT_PREFIX:
+        return data
+
     actual_data = data.replace(IMPORT_PREFIX, "", 1)
     if actual_data.endswith("()"):
         call = True
@@ -173,8 +176,10 @@ def _fill_referenced_parts_recursive(
 ) -> collections.abc.Mapping:
     new_data = {}
     for key, value in data.items():
-        if isinstance(value, str) and value.startswith(IS_REFERENCE_PREFIX):
-            new_data[key] = index_into(global_data, value, current_path)
+        if isinstance(value, str) and value.startswith(REFERENCE_PREFIX):
+            new_data[key] = copy.deepcopy(
+                index_into(global_data, value, current_path)
+            )
         elif isinstance(value, collections.abc.Mapping):
             new_data[key] = _fill_referenced_parts_recursive(
                 value, global_data, current_path + [key]
@@ -185,19 +190,51 @@ def _fill_referenced_parts_recursive(
 
 
 def index_into(
-    data: collections.abc.Mapping, path: str, current_path: list[str]
+    data: collections.abc.Mapping,
+    path: str,
+    current_path: list[str],
 ) -> Any:
-    path = path.replace(IS_REFERENCE_PREFIX, "", 1)
-    if path.startswith(ROOT_PREFIX):
-        path = path[1:]
-        paths = path.split(DELIMITER)
-    else:
-        paths = current_path + path.split(DELIMITER)
+    """
+    Index into a nested data structure.
 
-    # remove "."
+    Parameters
+    ----------
+    data: collections.abc.Mapping
+        The data to index into.
+    path: str
+        The path to index into.
+    current_path: list[str]
+        The current "location" within the data structure.
+
+    Returns
+    -------
+    Any
+        The indexed data.
+
+    Examples
+    --------
+    >>> index_into({"a": {"b": {"c": 1}}}, "a/b/c", [])
+    1
+    >>> data = '''
+    a: {b: 2}
+    c: {d: 3}
+    '''
+    >>> index_into(yaml.safe_load(data), "../a/b", ["c"])
+    2
+    """
+    path = path.replace(REFERENCE_PREFIX, "", 1)
+    if path.startswith("/"):
+        path = path[1:]
+        paths = path.split("/")
+    else:
+        paths = current_path + path.split("/")
+
+    # handle empty paths
+    paths = [p for p in paths if p != ""]
     final_paths = []
     for p in paths:
-        if p in " .":
+        # ignore no-op "."
+        if p == ".":
             continue
         elif p == "..":
             try:
@@ -222,7 +259,7 @@ def index_into(
     except KeyError:
         raise KeyError(
             f"The path we parsed ({final_paths}) does not exist in the data "
-            f"({og_data}). In particular, we could not find {p} in {data}."
+            f'({og_data}). In particular, we could not find "{p}" in {data}.'
         ) from None
 
     return data
@@ -243,13 +280,13 @@ def from_dict(
 
     **Reference handling**:
 
-    Any leaf-nodes within `data` that are strings and start with `"!"` are
-    interpreted as references to other parts of `data`. The following syntax is
-    supported:
+    Any leaf-nodes within `data` that are strings and start with `"="` are
+    interpreted as references to other parts of `data`. The syntax for these
+    references follows the same rules as unix paths:
 
-    * `"~path"`: resolve `path` relative to the root of the `data` structure.
-    * `"path"`: resolve `path` relative to the current working directory.
-    * `"../path"`: resolve `path` relative to the parent of the current working
+    * `"=/path"`: resolve `path` relative to the root of the `data` structure.
+    * `"=./path"`: resolve `path` relative to the current working directory.
+    * `"=../path"`: resolve `path` relative to the parent of the current working
       directory.
 
     **Object instantiation**:
@@ -268,7 +305,8 @@ def from_dict(
        - `"+tuple"` will be converted to the `tuple` **type**.
     2. if the string ends with a `"()"`, the resulting object is called with
        no arguments e.g. `"+my_module.MyClass()"` will be converted to an
-       **instance** of `MyClass` from `my_module`.
+       **instance** of `MyClass` from `my_module`. This is equivalent to
+       `+my_module.MyClass: {}` (see below).
     3. if the string is found as key in a mapping with exactly one key-value
        pair, then:
        - if the value is itself a mapping, the single-item mapping is replaced
@@ -355,3 +393,34 @@ def from_dict(
 
     filled = fill_referenced_parts(data)
     return process_data(filled, modules)
+
+
+def from_yaml(thing: str | Path, modules: list[object] | None = None) -> dict:
+    """
+    Load a nested dictionary from a yaml file or string, and parse it using
+    `data2objects.from_dict`.
+
+    If `thing` points to an existing file, the data in the file is loaded.
+    Otherwise, the string is treated as containing the raw yaml data.
+
+    Parameters
+    ----------
+    thing: str | Path
+        The yaml file or string to load.
+    modules: list[object] | None
+        A list of modules to look up non-fully qualified names in.
+
+    Returns
+    -------
+    dict
+        The transformed data.
+    """
+
+    if isinstance(thing, Path) or Path(thing).exists():
+        with open(thing) as f:
+            data = yaml.safe_load(f)
+
+    else:
+        data = yaml.safe_load(thing)
+
+    return from_dict(data, modules)

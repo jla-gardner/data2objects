@@ -83,19 +83,19 @@ def test_index_into():
         index_into(data, "", [])
 
     with pytest.raises(ValueError, match="is empty"):
-        from_dict({"a": "!~"})
+        from_dict({"a": "="})
 
 
 def test_referencing():
     data = {
-        "a": {"b": "!~c"},  # refer to c absolutely
+        "a": {"b": "=/c"},  # refer to c absolutely
         "c": 2,
     }
     obj = from_dict(data)
     assert obj["a"]["b"] == 2
 
     data = {
-        "a": {"b": "!../c"},  # refer to c relative to a
+        "a": {"b": "=../c"},  # refer to c relative to a
         "c": 2,
     }
     obj = from_dict(data)
