@@ -15,8 +15,19 @@ def test_basics():
 
 
 def test_errors():
+    # can't find "unknown" in builtins
     data = {"a": "+unknown"}
     with pytest.raises(ImportError, match="unknown"):
+        from_dict(data)
+
+    # can't find "ZZ" in helpers
+    data = {"+ZZZ": {"x": 1, "y": 2}}
+    with pytest.raises(ImportError, match="Could not find"):
+        from_dict(data, modules=[helpers])
+
+    # can find CONSTANT, but it isn't callable
+    data = {"+helpers.CONSTANT": {"x": 1, "y": 2}}
+    with pytest.raises(ValueError, match="is not callable"):
         from_dict(data)
 
 
