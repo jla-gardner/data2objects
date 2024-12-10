@@ -1,6 +1,15 @@
+<div align="center">
+
 # `data2objects`
 
 Transform nested data structures into Python objects.
+
+[![PyPI](https://img.shields.io/pypi/v/data2objects)](https://pypi.org/project/data2objects/)
+[![Tests](https://github.com/jla-gardner/data2objects/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jla-gardner/data2objects/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jla-gardner/data2objects/branch/main/graph/badge.svg)](https://codecov.io/gh/jla-gardner/data2objects)
+
+</div>
+
 
 
 ## Installation
