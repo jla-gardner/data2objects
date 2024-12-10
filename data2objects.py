@@ -212,7 +212,7 @@ def index_into(
 
     og_data = data
     if len(final_paths) == 0:
-        raise ValueError()
+        raise ValueError("The path we parsed is empty.")
 
     p = final_paths[0]
 
