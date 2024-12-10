@@ -4,7 +4,7 @@ from typing import cast
 import helpers
 import pytest
 
-from data2objects import from_dict, index_into, process_data_str, from_yaml
+from data2objects import from_dict, from_yaml, index_into, process_data_str
 
 
 def test_basics():
