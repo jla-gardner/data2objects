@@ -176,7 +176,11 @@ def _fill_referenced_parts_recursive(
 ) -> collections.abc.Mapping:
     new_data = {}
     for key, value in data.items():
-        if isinstance(value, str) and value.startswith(REFERENCE_PREFIX):
+        if (
+            isinstance(value, str)
+            and value.startswith(REFERENCE_PREFIX)
+            and value != REFERENCE_PREFIX
+        ):
             new_data[key] = copy.deepcopy(
                 index_into(global_data, value, current_path)
             )
@@ -422,5 +426,10 @@ def from_yaml(thing: str | Path, modules: list[object] | None = None) -> dict:
 
     else:
         data = yaml.safe_load(thing)
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"We could not load {thing} as a yaml file, and it does not "
+                "appear to be valid yaml."
+            )
 
     return from_dict(data, modules)
