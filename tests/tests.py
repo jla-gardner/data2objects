@@ -1,9 +1,10 @@
+from pathlib import Path
 from typing import cast
 
 import helpers
 import pytest
 
-from data2objects import from_dict, index_into, process_data_str
+from data2objects import from_dict, from_yaml, index_into, process_data_str
 
 
 def test_basics():
@@ -29,6 +30,26 @@ def test_errors():
     data = {"+helpers.CONSTANT": {"x": 1, "y": 2}}
     with pytest.raises(ValueError, match="is not callable"):
         from_dict(data)
+
+
+def test_from_yaml(tmp_path: Path):
+    data = "a: 1"
+    assert from_yaml(data) == {"a": 1}
+
+    file = tmp_path / "data.yaml"
+    file.write_text("a: 1")
+    assert from_yaml(file) == {"a": 1}
+
+    with pytest.raises(ValueError, match="could not load"):
+        from_yaml("does_not_exist.yaml")
+
+
+def test_isolated_prefixes():
+    data = {"a": "+"}
+    assert from_dict(data) == {"a": "+"}
+
+    data = {"a": "="}
+    assert from_dict(data) == {"a": "="}
 
 
 def test_single_positional_arg(capsys):
@@ -82,20 +103,17 @@ def test_index_into():
     with pytest.raises(ValueError, match="is empty"):
         index_into(data, "", [])
 
-    with pytest.raises(ValueError, match="is empty"):
-        from_dict({"a": "!~"})
-
 
 def test_referencing():
     data = {
-        "a": {"b": "!~c"},  # refer to c absolutely
+        "a": {"b": "=/c"},  # refer to c absolutely
         "c": 2,
     }
     obj = from_dict(data)
     assert obj["a"]["b"] == 2
 
     data = {
-        "a": {"b": "!../c"},  # refer to c relative to a
+        "a": {"b": "=../c"},  # refer to c relative to a
         "c": 2,
     }
     obj = from_dict(data)
