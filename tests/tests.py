@@ -1,4 +1,5 @@
 from typing import cast
+
 import helpers
 import pytest
 
@@ -91,7 +92,7 @@ def test_referencing():
 
 
 def test_process_data_str():
-    assert process_data_str("+list") == list
+    assert process_data_str("+list") is list
     assert process_data_str("+list()") == list()
 
 
